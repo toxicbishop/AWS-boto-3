@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cloud Master - EC2 Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff9900;
+            --secondary: #232f3e;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0, transparent 50%),
+                radial-gradient(at 50% 0%, rgba(255, 153, 0, 0.1) 0, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--secondary);
+            font-size: 1.5rem;
+            box-shadow: 0 0 20px rgba(255, 153, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-running { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-stopped { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+        .status-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .status-stopping { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+
+        .dashboard-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 153, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .alert-success { background: rgba(16, 185, 129, 0.2); border-left: 4px solid var(--success); }
+        .alert-danger { background: rgba(239, 68, 68, 0.2); border-left: 4px solid var(--error); }
+        .alert-info { background: rgba(59, 130, 246, 0.2); border-left: 4px solid var(--info); }
+        .alert-warning { background: rgba(245, 158, 11, 0.2); border-left: 4px solid var(--warning); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .instance-id {
+            font-family: monospace;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-start { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .btn-start:hover { background: var(--success); color: white; }
+
+        .btn-stop { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .btn-stop:hover { background: var(--error); color: white; }
+
+        .btn-reboot { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .btn-reboot:hover { background: var(--warning); color: white; }
+
+        .empty-state {
+            padding: 4rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div class="logo">A</div>
+                <div>
+                    <h1>AWS Cloud Master</h1>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">EC2 Fleet Management Hub</p>
+                </div>
+            </div>
+            <div class="actions">
+                <a href="/" class="btn" style="background: rgba(255,255,255,0.05); color: white;">Refresh Dashboard</a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% if error %}
+            <div class="alert alert-danger">
+                <div>
+                    <strong>Connection Error:</strong>
+                    <p style="margin-top: 0.25rem; opacity: 0.8;">{{ error }}</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Instance Name</th>
+                        <th>Instance ID</th>
+                        <th>Type</th>
+                        <th>IP Address</th>
+                        <th>Status</th>
+                        <th>Operations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instance in instances %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ instance.name }}</td>
+                        <td class="instance-id">{{ instance.id }}</td>
+                        <td><span style="opacity: 0.6;">{{ instance.type }}</span></td>
+                        <td>{{ instance.ip }}</td>
+                        <td>
+                            <span class="status-badge status-{{ instance.state }}">
+                                {{ instance.state }}
+                            </span>
+                        </td>
+                        <td class="actions">
+                            {% if instance.state == 'stopped' %}
+                                <a href="/action/start/{{ instance.id }}" class="btn btn-start">Start</a>
+                            {% elif instance.state == 'running' %}
+                                <a href="/action/stop/{{ instance.id }}" class="btn btn-stop">Stop</a>
+                                <a href="/action/reboot/{{ instance.id }}" class="btn btn-reboot">Reboot</a>
+                            {% else %}
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Transitioning...</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    {% if not error %}
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <p>No instances found in us-east-1.</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
