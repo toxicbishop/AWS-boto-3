@@ -54,4 +54,10 @@ def instance_action(action, instance_id):
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    import os
+    if os.path.exists('cert.pem') and os.path.exists('key.pem'):
+        print("Starting in HTTPS mode...")
+        app.run(debug=True, ssl_context=('cert.pem', 'key.pem'))
+    else:
+        print("Starting in HTTP mode (Run 'make certs' to enable HTTPS)...")
+        app.run(debug=True)
